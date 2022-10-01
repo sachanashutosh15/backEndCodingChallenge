@@ -1,10 +1,17 @@
-const { urlencoded } = require("express");
+require("dotenv/config");
 const express = require("express");
+const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const app = express();
 const swaggerJsDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const { usersModel, productsModel } = require("./models");
+const { isAuth } = require("./utilities/authorization");
+const { createAccessToken, sendAccessToken } = require("./utilities/tokens");
+const { authorize } = require("./utilities/authorize");
+
+const route = express.Router();
+route.use(authorize);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
@@ -39,8 +46,6 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Routes
-
-
 /**
  * @swagger
  * /products:
@@ -60,16 +65,63 @@ app.post("/products", async (req, res) => {
     await newProductsModel.save();
     res.status(200).send({res: "Successfully added the product"});
   } catch (error) {
-    res.send({error: `${error}`});
+    res.send({error: `${error.message}`});
   }
 })
 
-app.get("/items", async (req, res) => {
+route.get("/items", async (req, res) => {
   try {
     const items = await productsModel.find();
     res.status(200).send({res: items});
   } catch (error) {
-    res.send({error: error})
+    res.send({error: `${error.message}`})
+  }
+})
+
+route.get("/users", async (req, res) => {
+  const userName = isAuth(req);
+  const user = (await usersModel.find({ name: userName}))[0];
+  try {
+    if (user.type !== "admin") throw new Error("You don't have the rights to this information.");
+    const users = await usersModel.find();
+    res.status(200).send({users: users});
+  } catch (error) {
+    res.send({
+      error: `${error.message}`,
+    })
+  }
+})
+
+app.post("/users", async (req, res) => {
+  try {
+    console.log(req.body);
+    const {type, userName, password, address} = req.body;
+    if (!type || !userName || !password || !address) {
+      throw new Error("Please provide all the details");
+    }
+    const users = await usersModel.find({ name: userName });
+    if (users.length > 0) throw new Error("User already exists please try with new userName");
+    const userPassword = await bcrypt.hash(password, 10);
+    const newUsersModel = new usersModel({...req.body, password: userPassword});
+    await newUsersModel.save();
+    res.status(200).send({res: `Successfully added ${userName}`});
+  } catch (error) {
+    res.send({error: `${error.message}`});
+  }
+})
+
+app.post("/login", async(req, res) => {
+  const { userName, password } = req.body;
+  try {
+    if (!userName || !password) throw new Error("Please enter all the details.");
+    const user = await usersModel.find({ name: userName });
+    console.log(user);
+    const valid = await bcrypt.compare(password, user[0].password);
+    if (!valid) throw new Error("Password incorrect");
+    const accessToken = createAccessToken(userName);
+    sendAccessToken(req, res, accessToken);
+  } catch (error) {
+    res.send({error: `${error.message}`});
   }
 })
 
@@ -77,6 +129,7 @@ app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
 
+app.use("/", route);
 
 
 

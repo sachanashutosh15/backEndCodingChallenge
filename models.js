@@ -9,8 +9,8 @@ const productSchema = mongoose.Schema({
 })
 
 const userSchema = mongoose.Schema({
-  userType: String,
-  name: String,
+  type: String,
+  userName: String,
   password: String,
   address: String,
 })
