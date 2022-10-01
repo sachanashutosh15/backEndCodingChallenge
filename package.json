@@ -19,6 +19,7 @@
   "homepage": "https://github.com/sachanashutosh15/backEndCodingChallenge#readme",
   "dependencies": {
     "express": "^4.18.1",
+    "mongoose": "^6.6.3",
     "swagger-jsdoc": "^6.2.5",
     "swagger-ui-express": "^4.5.0"
   },
