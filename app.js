@@ -54,9 +54,12 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
  *    parameters:
  *      - name: Product
  */
-app.post("/products", async (req, res) => {
+route.post("/products", async (req, res) => {
+  const userName = isAuth(req);
+  const user = (await usersModel.find({ name: userName}))[0];
+  console.log(user);
   try {
-    console.log(req.body);
+    if (user.type !== "admin") throw new Error("You don't have the rights to perform this task.");
     const { name, pricePerUnit, totalQuantity, quantityPerUnit, unit } = req.body;
     if (!name || !pricePerUnit || !totalQuantity || !quantityPerUnit || !unit) {
       throw new Error("Please provide all information to maintain homogeneity of data");
@@ -80,7 +83,10 @@ route.get("/items", async (req, res) => {
 
 route.get("/users", async (req, res) => {
   const userName = isAuth(req);
-  const user = (await usersModel.find({ name: userName}))[0];
+  console.log(userName);
+  const users = await usersModel.find({ userName: userName});
+  const user = users[0];
+  console.log(user);
   try {
     if (user.type !== "admin") throw new Error("You don't have the rights to this information.");
     const users = await usersModel.find();
@@ -99,7 +105,8 @@ app.post("/users", async (req, res) => {
     if (!type || !userName || !password || !address) {
       throw new Error("Please provide all the details");
     }
-    const users = await usersModel.find({ name: userName });
+    const users = await usersModel.find({ userName: userName });
+    console.log(users);
     if (users.length > 0) throw new Error("User already exists please try with new userName");
     const userPassword = await bcrypt.hash(password, 10);
     const newUsersModel = new usersModel({...req.body, password: userPassword});
@@ -114,11 +121,10 @@ app.post("/login", async(req, res) => {
   const { userName, password } = req.body;
   try {
     if (!userName || !password) throw new Error("Please enter all the details.");
-    const user = await usersModel.find({ name: userName });
-    console.log(user);
+    const user = await usersModel.find({ userName: userName });
     const valid = await bcrypt.compare(password, user[0].password);
     if (!valid) throw new Error("Password incorrect");
-    const accessToken = createAccessToken(userName);
+    const accessToken = createAccessToken(user[0].userName);
     sendAccessToken(req, res, accessToken);
   } catch (error) {
     res.send({error: `${error.message}`});

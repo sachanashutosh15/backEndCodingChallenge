@@ -2,7 +2,6 @@ const { verify } = require("jsonwebtoken");
 
 const isAuth = (req) => {
   const authInfo = req.headers["authinfo"];
-  console.log(authInfo);
   try {
     if (!authInfo) throw new Error("Please log in");
     const token = authInfo;

@@ -9,6 +9,8 @@ const productSchema = mongoose.Schema({
 })
 
 const userSchema = mongoose.Schema({
+  // type can be user, admin
+  // only admin can access the full list of users.
   type: String,
   userName: String,
   password: String,
