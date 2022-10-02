@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }))
 
 const port = process.env.PORT || 3001;
 
-mongoose.connect("mongodb+srv://sachanashutosh15:Ashutosh_99@cluster0.agcck.mongodb.net/FMCG?retryWrites=true&w=majority")
+mongoose.connect("mongodb+srv://sachanashutosh15:<password>@cluster0.agcck.mongodb.net/FMCG?retryWrites=true&w=majority")
 .then(() => {
   console.log("Successfully connected to database");
 })
